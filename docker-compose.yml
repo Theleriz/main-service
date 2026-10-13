@@ -17,10 +17,8 @@ services:
       retries: 10
 
   main-service:
-    # Before handing in: push the image and switch to `image: <dockerhub-login>/main-service:latest`
-    # (and drop `build`), so the mentor pulls it from Docker Hub.
-    image: main-service:latest
-    build: .
+    # Pulled from Docker Hub; to build locally instead run: docker build -t theleriz/main-service:latest .
+    image: theleriz/main-service:latest
     container_name: lms-main-service
     depends_on:
       postgres:

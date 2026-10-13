@@ -17,7 +17,9 @@ docker compose up -d
 
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
-- Docker Hub: `https://hub.docker.com/r/<dockerhub-login>/main-service`
+- Docker Hub: https://hub.docker.com/r/theleriz/main-service (`theleriz/main-service:1.0`, `latest`)
+
+Образ стягивается из Docker Hub, собирать проект локально не нужно.
 
 Остановить и удалить данные: `docker compose down -v`.
 
