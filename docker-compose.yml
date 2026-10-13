@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: lms-postgres
+    environment:
+      POSTGRES_DB: lms_main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lms_main"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  main-service:
+    # Before handing in: push the image and switch to `image: <dockerhub-login>/main-service:latest`
+    # (and drop `build`), so the mentor pulls it from Docker Hub.
+    image: main-service:latest
+    build: .
+    container_name: lms-main-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: lms_main
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:
