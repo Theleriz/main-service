@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-insert-java-developer
+      author: bitlab
+      changes:
+        - sqlFile:
+            path: data/java-developer.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 002-insert-python-developer
+      author: bitlab
+      changes:
+        - sqlFile:
+            path: data/python-developer.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 002-insert-sql-developer
+      author: bitlab
+      changes:
+        - sqlFile:
+            path: data/sql-developer.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: false
