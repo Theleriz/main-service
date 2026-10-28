@@ -1,6 +1,7 @@
 package kz.bitlab.mainservice.controller;
 
 import kz.bitlab.mainservice.TestData;
+import kz.bitlab.mainservice.config.WithSecurityConfig;
 import kz.bitlab.mainservice.dto.CourseCreateRequest;
 import kz.bitlab.mainservice.dto.CourseDto;
 import kz.bitlab.mainservice.dto.CourseUpdateRequest;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CourseController.class)
+@WithSecurityConfig
+@WithMockUser(roles = "ADMIN")
 class CourseControllerTest {
 
     @Autowired
@@ -199,5 +204,52 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.message").value("Internal server error"))
                 .andExpect(jsonPath("$.trace").doesNotExist());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void getAll_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/courses"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.path").value("/api/v1/courses"));
+
+        verify(courseService, never()).getAll();
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getAll_asUser_returns200() throws Exception {
+        when(courseService.getAll()).thenReturn(List.of(TestData.courseDto()));
+
+        mockMvc.perform(get("/api/v1/courses"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void create_asUser_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Java Developer"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+
+        verify(courseService, never()).create(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_asTeacher_returns201() throws Exception {
+        when(courseService.create(any(CourseCreateRequest.class))).thenReturn(TestData.courseDto());
+
+        mockMvc.perform(post("/api/v1/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Java Developer"}
+                                """))
+                .andExpect(status().isCreated());
     }
 }

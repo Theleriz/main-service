@@ -10,11 +10,87 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - lms
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d lms_main"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Keycloak's own database: only on the internal keycloak-db network, no host port,
+  # so the main service cannot reach it
+  keycloak-postgres:
+    image: postgres:17
+    container_name: lms-keycloak-postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    networks:
+      - keycloak-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    container_name: lms-keycloak
+    # Imports the lms realm (realm settings + main-service client) on the first start
+    command: ["start-dev", "--import-realm"]
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # Tokens always get iss=http://localhost:8180/realms/lms, also when the main service
+      # calls Keycloak inside the docker network as http://keycloak:8080
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realm-lms.json:/opt/keycloak/data/import/realm-lms.json:ro
+    ports:
+      - "8180:8080"
+    networks:
+      - lms
+      - keycloak-db
+    healthcheck:
+      # The image has no curl: ask the management port for /health/ready over bash /dev/tcp
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && read -r status <&3 && [[ $$status == *' 200 '* ]]"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # One-shot job: inserts roles ROLE_ADMIN, ROLE_TEACHER, ROLE_USER and the initial users
+  # straight into Keycloak's database after Keycloak has created its schema and the lms realm
+  keycloak-init:
+    image: postgres:17
+    container_name: lms-keycloak-init
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      PGHOST: keycloak-postgres
+      PGDATABASE: keycloak
+      PGUSER: keycloak
+      PGPASSWORD: keycloak
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/scripts/insert.sql"]
+    volumes:
+      - ./keycloak/insert.sql:/scripts/insert.sql:ro
+    networks:
+      - keycloak-db
+    restart: "no"
 
   main-service:
     # Pulled from Docker Hub; to build locally instead run: docker build -t theleriz/main-service:latest .
@@ -23,14 +99,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: lms_main
       DB_USER: postgres
       DB_PASSWORD: postgres
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_ISSUER_URL: http://localhost:8180
     ports:
       - "8080:8080"
+    networks:
+      - lms
+
+networks:
+  lms:
+  keycloak-db:
+    internal: true
 
 volumes:
   postgres-data:
+  keycloak-postgres-data:

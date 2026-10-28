@@ -9,11 +9,21 @@ import kz.bitlab.mainservice.dto.CourseUpdateRequest;
 import kz.bitlab.mainservice.dto.LessonCreateRequest;
 import kz.bitlab.mainservice.dto.LessonDto;
 import kz.bitlab.mainservice.dto.LessonUpdateRequest;
+import kz.bitlab.mainservice.dto.TokenResponse;
+import kz.bitlab.mainservice.dto.UserCreateRequest;
+import kz.bitlab.mainservice.dto.UserDto;
 import kz.bitlab.mainservice.entity.Chapter;
 import kz.bitlab.mainservice.entity.Course;
 import kz.bitlab.mainservice.entity.Lesson;
+import kz.bitlab.mainservice.keycloak.dto.KeycloakTokenResponse;
+import kz.bitlab.mainservice.keycloak.dto.KeycloakUser;
+import kz.bitlab.mainservice.security.AuthUser;
+import kz.bitlab.mainservice.security.Role;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Set;
 
 /**
  * Shared test fixtures, so that tests do not duplicate object construction.
@@ -32,6 +42,12 @@ public final class TestData {
     public static final String LESSON_NAME = "Lecture for if-else conditions";
     public static final String LESSON_DESCRIPTION = "Theory: conditional statements and logical operators.";
     public static final String LESSON_CONTENT = "<h2>Making decisions with if-else</h2><p>The if statement executes a block only when its condition is true.</p>";
+
+    public static final String USER_ID = "5c2e8b1a-4f3d-4e7a-8c6b-0b0000000003";
+    public static final String USERNAME = "user";
+    public static final String USER_EMAIL = "user@bitlab.kz";
+    public static final String ACCESS_TOKEN = "access-token";
+    public static final String REFRESH_TOKEN = "refresh-token";
 
     private static final LocalDateTime TIME = LocalDateTime.of(2026, 10, 13, 10, 15, 30);
 
@@ -155,6 +171,66 @@ public final class TestData {
                 .description("Theory: conditional statements, ternary operator and switch.")
                 .content(LESSON_CONTENT)
                 .order(1)
+                .build();
+    }
+
+    public static AuthUser authUser(Role... roles) {
+        return new AuthUser(USER_ID, USERNAME, USER_EMAIL, Arrays.stream(roles)
+                .map(role -> new SimpleGrantedAuthority(role.name()))
+                .toList());
+    }
+
+    public static KeycloakUser keycloakUser() {
+        return KeycloakUser.builder()
+                .id(USER_ID)
+                .username(USERNAME)
+                .email(USER_EMAIL)
+                .firstName("User")
+                .lastName("Bitlab")
+                .enabled(true)
+                .emailVerified(true)
+                .build();
+    }
+
+    public static UserDto userDto(Role... roles) {
+        return UserDto.builder()
+                .id(USER_ID)
+                .username(USERNAME)
+                .email(USER_EMAIL)
+                .firstName("User")
+                .lastName("Bitlab")
+                .enabled(true)
+                .roles(Set.of(roles))
+                .build();
+    }
+
+    public static UserCreateRequest userCreateRequest() {
+        return UserCreateRequest.builder()
+                .username(USERNAME)
+                .email(USER_EMAIL)
+                .firstName("User")
+                .lastName("Bitlab")
+                .password("secret123")
+                .build();
+    }
+
+    public static KeycloakTokenResponse keycloakTokenResponse() {
+        return KeycloakTokenResponse.builder()
+                .accessToken(ACCESS_TOKEN)
+                .refreshToken(REFRESH_TOKEN)
+                .tokenType("Bearer")
+                .expiresIn(300L)
+                .refreshExpiresIn(604800L)
+                .build();
+    }
+
+    public static TokenResponse tokenResponse() {
+        return TokenResponse.builder()
+                .accessToken(ACCESS_TOKEN)
+                .refreshToken(REFRESH_TOKEN)
+                .tokenType("Bearer")
+                .expiresIn(300L)
+                .refreshExpiresIn(604800L)
                 .build();
     }
 }

@@ -1,0 +1,41 @@
+{
+  "realm": "lms",
+  "displayName": "BITLAB ACADEMY LMS",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 604800,
+  "clients": [
+    {
+      "clientId": "lms-main-service",
+      "name": "LMS Main Service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "lms-main-service-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client.session.idle.timeout": "604800",
+        "client.session.max.lifespan": "604800"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-lms-main-service",
+      "enabled": true,
+      "serviceAccountClientId": "lms-main-service",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "query-users", "view-realm"]
+      }
+    }
+  ]
+}

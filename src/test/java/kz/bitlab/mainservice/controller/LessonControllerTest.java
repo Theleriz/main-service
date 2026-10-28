@@ -1,6 +1,7 @@
 package kz.bitlab.mainservice.controller;
 
 import kz.bitlab.mainservice.TestData;
+import kz.bitlab.mainservice.config.WithSecurityConfig;
 import kz.bitlab.mainservice.dto.LessonCreateRequest;
 import kz.bitlab.mainservice.dto.LessonDto;
 import kz.bitlab.mainservice.dto.LessonUpdateRequest;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(LessonController.class)
+@WithSecurityConfig
+@WithMockUser(roles = "ADMIN")
 class LessonControllerTest {
 
     @Autowired

@@ -12,6 +12,20 @@ spring:
       ddl-auto: validate
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # iss claim of Keycloak tokens (public Keycloak URL)
+          issuer-uri: ${KEYCLOAK_ISSUER_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:lms}
+          # Signing keys are loaded from Keycloak directly (inside docker: http://keycloak:8080)
+          jwk-set-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:lms}/protocol/openid-connect/certs
+
+keycloak:
+  url: ${KEYCLOAK_URL:http://localhost:8180}
+  realm: ${KEYCLOAK_REALM:lms}
+  client-id: ${KEYCLOAK_CLIENT_ID:lms-main-service}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:lms-main-service-secret}
 
 server:
   port: 8080
