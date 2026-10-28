@@ -38,10 +38,10 @@ services:
       retries: 10
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.4
+    # Keycloak 26.4 with the lms realm inside (keycloak/Dockerfile).
+    # To build locally instead run: docker build -t theleriz/lms-keycloak:latest keycloak
+    image: theleriz/lms-keycloak:latest
     container_name: lms-keycloak
-    # Imports the lms realm (realm settings + main-service client) on the first start
-    command: ["start-dev", "--import-realm"]
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -57,8 +57,6 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-    volumes:
-      - ./keycloak/realm-lms.json:/opt/keycloak/data/import/realm-lms.json:ro
     ports:
       - "8180:8080"
     networks:
@@ -75,7 +73,9 @@ services:
   # One-shot job: inserts roles ROLE_ADMIN, ROLE_TEACHER, ROLE_USER and the initial users
   # straight into Keycloak's database after Keycloak has created its schema and the lms realm
   keycloak-init:
-    image: postgres:17
+    # postgres:17 with keycloak/init/insert.sql inside (keycloak/init/Dockerfile).
+    # To build locally instead run: docker build -t theleriz/lms-keycloak-init:latest keycloak/init
+    image: theleriz/lms-keycloak-init:latest
     container_name: lms-keycloak-init
     depends_on:
       keycloak:
@@ -85,9 +85,6 @@ services:
       PGDATABASE: keycloak
       PGUSER: keycloak
       PGPASSWORD: keycloak
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/scripts/insert.sql"]
-    volumes:
-      - ./keycloak/insert.sql:/scripts/insert.sql:ro
     networks:
       - keycloak-db
     restart: "no"

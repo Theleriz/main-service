@@ -19,17 +19,20 @@ docker compose up -d
 |---|---|---|
 | `lms-postgres` | БД основного сервиса | 5432 |
 | `lms-keycloak-postgres` | Собственная БД Keycloak (только во внутренней сети `keycloak-db`, основной сервис её не видит) | — |
-| `lms-keycloak` | Keycloak 26, realm `lms` импортируется из `keycloak/realm-lms.json` | 8180 |
-| `lms-keycloak-init` | Одноразовый контейнер: выполняет `keycloak/insert.sql` в БД Keycloak и завершается | — |
+| `lms-keycloak` | Образ `theleriz/lms-keycloak`: Keycloak 26 со встроенным realm `lms` (`keycloak/realm-lms.json`) | 8180 |
+| `lms-keycloak-init` | Образ `theleriz/lms-keycloak-init`: одноразово выполняет `keycloak/init/insert.sql` в БД Keycloak и завершается | — |
 | `lms-main-service` | Основной сервис, стартует после `lms-keycloak-init` | 8080 |
 
 Liquibase основного сервиса создаёт таблицы и загружает стартовые данные: курсы Java Developer, Python Developer и SQL and PostgreSQL Developer с главами, лекциями и практиками.
 
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
-- Docker Hub: https://hub.docker.com/r/theleriz/main-service (`theleriz/main-service:2.0` — с Keycloak и Spring Security, `latest`; `1.0` — без безопасности)
+- Docker Hub:
+  - https://hub.docker.com/r/theleriz/main-service (`2.0` — с Keycloak и Spring Security, `latest`; `1.0` — без безопасности)
+  - https://hub.docker.com/r/theleriz/lms-keycloak (`1.0`, `latest`)
+  - https://hub.docker.com/r/theleriz/lms-keycloak-init (`1.0`, `latest`)
 
-Образ стягивается из Docker Hub, собирать проект локально не нужно.
+Все образы стягиваются из Docker Hub: для запуска достаточно одного файла `docker-compose.yml`, собирать проект локально не нужно.
 
 Остановить и удалить данные: `docker compose down -v`.
 
@@ -39,7 +42,7 @@ Liquibase основного сервиса создаёт таблицы и з�
 - Realm `lms`: JWT access token живёт 5 минут, refresh token — 168 часов (SSO Session Idle / Max = 604800 с).
 - Клиент `lms-main-service` (confidential, secret `lms-main-service-secret`): password и refresh_token grant для логина, service account с ролями `manage-users`, `view-users`, `query-users`, `view-realm` для регистрации и обновления пользователей через Admin REST API.
 
-Роли и пользователи создаются SQL-скриптом [`keycloak/insert.sql`](keycloak/insert.sql) прямо в БД Keycloak (Liquibase основного сервиса к ней доступа не имеет). Скрипт идемпотентный.
+Роли и пользователи создаются SQL-скриптом [`keycloak/init/insert.sql`](keycloak/init/insert.sql) прямо в БД Keycloak (Liquibase основного сервиса к ней доступа не имеет). Скрипт идемпотентный.
 
 | Пользователь | Пароль | Роль |
 |---|---|---|
@@ -111,6 +114,14 @@ curl -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: applicati
 
 404 — объект не найден, 400 — ошибка валидации (с `fieldErrors`), кривой JSON или неверный тип id, 401 — нет/неверный токен или неверный логин/пароль, 403 — нет прав, 409 — username или email уже заняты, 500 — непредвиденная ошибка.
 
+## Сборка образов
+
+```bash
+docker build -t theleriz/main-service:latest .
+docker build -t theleriz/lms-keycloak:latest keycloak
+docker build -t theleriz/lms-keycloak-init:latest keycloak/init
+```
+
 ## Локальная разработка
 
 ```bash
@@ -147,7 +158,10 @@ src/main/java/kz/bitlab/mainservice/
 src/main/resources/db/changelog/
 ├── db.changelog-master.yaml
 └── changes/       001-create-tables.yaml, 002-insert-data.yaml, data/*.sql
-keycloak/
-├── realm-lms.json  realm lms, время жизни токенов, клиент lms-main-service
-└── insert.sql      роли ROLE_ADMIN / ROLE_TEACHER / ROLE_USER и пользователи в БД Keycloak
+keycloak/                 образ theleriz/lms-keycloak
+├── Dockerfile
+├── realm-lms.json        realm lms, время жизни токенов, клиент lms-main-service
+└── init/                 образ theleriz/lms-keycloak-init
+    ├── Dockerfile
+    └── insert.sql        роли ROLE_ADMIN / ROLE_TEACHER / ROLE_USER и пользователи в БД Keycloak
 ```
