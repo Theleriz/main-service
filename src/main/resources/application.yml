@@ -12,6 +12,10 @@ spring:
       ddl-auto: validate
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   security:
     oauth2:
       resourceserver:
@@ -20,6 +24,12 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:lms}
           # Signing keys are loaded from Keycloak directly (inside docker: http://keycloak:8080)
           jwk-set-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:lms}/protocol/openid-connect/certs
+
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket: ${MINIO_BUCKET:lms-files}
 
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8180}

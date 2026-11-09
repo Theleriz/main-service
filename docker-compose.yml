@@ -89,6 +89,42 @@ services:
       - keycloak-db
     restart: "no"
 
+  # S3-compatible file storage for lesson attachments.
+  # Official minio/minio images are no longer published, pgsty/minio is the community-maintained build
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    container_name: lms-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - lms
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the lms-files bucket (skipped if it already exists)
+  minio-init:
+    image: pgsty/mc:RELEASE.2026-08-04T00-00-00Z
+    container_name: lms-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - mc alias set lms http://minio:9000 minioadmin minioadmin && mc mb --ignore-existing lms/lms-files
+    networks:
+      - lms
+    restart: "no"
+
   main-service:
     # Pulled from Docker Hub; to build locally instead run: docker build -t theleriz/main-service:latest .
     image: theleriz/main-service:latest
@@ -98,6 +134,8 @@ services:
         condition: service_healthy
       keycloak-init:
         condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -106,6 +144,10 @@ services:
       DB_PASSWORD: postgres
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_ISSUER_URL: http://localhost:8180
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: lms-files
     ports:
       - "8080:8080"
     networks:
@@ -119,3 +161,4 @@ networks:
 volumes:
   postgres-data:
   keycloak-postgres-data:
+  minio-data:

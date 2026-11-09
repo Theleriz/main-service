@@ -26,11 +26,23 @@ public class SecurityConfig {
             "/error"
     };
 
+    // Reading courses, chapters, lessons and downloading attachments
     private static final String[] CONTENT_URLS = {
             "/api/v1/courses/**",
             "/api/v1/chapters/**",
-            "/api/v1/lessons/**"
+            "/api/v1/lessons/**",
+            "/attachment/download/**"
     };
+
+    // Creating, updating and deleting courses and chapters (LT15, LT16)
+    private static final String[] ADMIN_URLS = {
+            "/course/**",
+            "/chapter/**"
+    };
+
+    private static final String ADMIN = "ADMIN";
+    private static final String TEACHER = "TEACHER";
+    private static final String USER = "USER";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -42,8 +54,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(HttpMethod.GET, CONTENT_URLS).authenticated()
-                        .requestMatchers(CONTENT_URLS).hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(ADMIN_URLS).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.GET, CONTENT_URLS).hasAnyRole(ADMIN, TEACHER, USER)
+                        .requestMatchers(HttpMethod.POST, "/attachment/upload").hasAnyRole(ADMIN, TEACHER)
+                        .requestMatchers("/api/v1/lessons/**").hasAnyRole(ADMIN, TEACHER)
                         // Finer rules for /api/v1/users are set with @PreAuthorize in UserController
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

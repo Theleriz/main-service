@@ -5,3 +5,6 @@ databaseChangeLog:
   - include:
       file: changes/002-insert-data.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/003-create-attachments.yaml
+      relativeToChangelogFile: true

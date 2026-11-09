@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-attachments
+      author: bitlab
+      changes:
+        - createTable:
+            tableName: attachments
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_attachments_url
+              - column:
+                  name: lesson_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_attachments_lesson
+                    references: lessons(id)
+                    deleteCascade: true
+              - column:
+                  name: created_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: attachments
+            indexName: idx_attachments_lesson_id
+            columns:
+              - column:
+                  name: lesson_id

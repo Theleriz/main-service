@@ -5,7 +5,9 @@ import kz.bitlab.mainservice.config.WithSecurityConfig;
 import kz.bitlab.mainservice.dto.LessonCreateRequest;
 import kz.bitlab.mainservice.dto.LessonDto;
 import kz.bitlab.mainservice.dto.LessonUpdateRequest;
+import kz.bitlab.mainservice.dto.AttachmentDto;
 import kz.bitlab.mainservice.exception.NotFoundException;
+import kz.bitlab.mainservice.service.AttachmentService;
 import kz.bitlab.mainservice.service.LessonService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,9 @@ class LessonControllerTest {
 
     @MockitoBean
     private LessonService lessonService;
+
+    @MockitoBean
+    private AttachmentService attachmentService;
 
     @Test
     void getAll_returns200AndLessons() throws Exception {
@@ -177,5 +182,33 @@ class LessonControllerTest {
         mockMvc.perform(delete("/api/v1/lessons/{id}", MISSING_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Lesson with id 999 not found"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getAttachments_asUser_returns200() throws Exception {
+        when(attachmentService.getAllByLessonId(LESSON_ID)).thenReturn(List.of(AttachmentDto.builder()
+                .id(1L).name("cheatsheet.pdf").url("lessons/5/file.pdf").lessonId(LESSON_ID).build()));
+
+        mockMvc.perform(get("/api/v1/lessons/{id}/attachments", LESSON_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("cheatsheet.pdf"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void delete_asUser_returns403() throws Exception {
+        mockMvc.perform(delete("/api/v1/lessons/{id}", LESSON_ID))
+                .andExpect(status().isForbidden());
+
+        verify(lessonService, never()).delete(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void delete_asTeacher_returns204() throws Exception {
+        mockMvc.perform(delete("/api/v1/lessons/{id}", LESSON_ID))
+                .andExpect(status().isNoContent());
     }
 }

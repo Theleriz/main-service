@@ -11,9 +11,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -79,6 +82,33 @@ public class GlobalExceptionHandler {
                 + "', expected type " + requiredType;
         log.error("Type mismatch: {}", message);
         return build(HttpStatus.BAD_REQUEST, message, request, null);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+        log.error("Bad request {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex,
+                                                                HttpServletRequest request) {
+        log.error("Missing parameter for {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getParameterName());
+        return build(HttpStatus.BAD_REQUEST, "Parameter '" + ex.getParameterName() + "' is required", request, null);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex,
+                                                           HttpServletRequest request) {
+        log.error("Missing part for {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getRequestPartName());
+        return build(HttpStatus.BAD_REQUEST, "Part '" + ex.getRequestPartName() + "' is required", request, null);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex,
+                                                             HttpServletRequest request) {
+        log.error("Upload too large for {} {}", request.getMethod(), request.getRequestURI());
+        return build(HttpStatus.CONTENT_TOO_LARGE, "File is too large, the limit is 50 MB", request, null);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

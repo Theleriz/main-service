@@ -1,5 +1,6 @@
 package kz.bitlab.mainservice;
 
+import kz.bitlab.mainservice.dto.AttachmentDto;
 import kz.bitlab.mainservice.dto.ChapterCreateRequest;
 import kz.bitlab.mainservice.dto.ChapterDto;
 import kz.bitlab.mainservice.dto.ChapterUpdateRequest;
@@ -12,6 +13,7 @@ import kz.bitlab.mainservice.dto.LessonUpdateRequest;
 import kz.bitlab.mainservice.dto.TokenResponse;
 import kz.bitlab.mainservice.dto.UserCreateRequest;
 import kz.bitlab.mainservice.dto.UserDto;
+import kz.bitlab.mainservice.entity.Attachment;
 import kz.bitlab.mainservice.entity.Chapter;
 import kz.bitlab.mainservice.entity.Course;
 import kz.bitlab.mainservice.entity.Lesson;
@@ -34,6 +36,9 @@ public final class TestData {
     public static final Long CHAPTER_ID = 3L;
     public static final Long LESSON_ID = 5L;
     public static final Long MISSING_ID = 999L;
+    public static final Long ATTACHMENT_ID = 7L;
+    public static final String ATTACHMENT_NAME = "if-else-cheatsheet.pdf";
+    public static final String ATTACHMENT_URL = "lessons/5/3f2b8c1e-6d4a-4f1b-9a7e-2c5d8e9f0a1b.pdf";
 
     public static final String COURSE_NAME = "Java Developer";
     public static final String COURSE_DESCRIPTION = "A complete path from the first line of Java code to backend development.";
@@ -231,6 +236,26 @@ public final class TestData {
                 .tokenType("Bearer")
                 .expiresIn(300L)
                 .refreshExpiresIn(604800L)
+                .build();
+    }
+
+    public static Attachment attachment() {
+        return Attachment.builder()
+                .id(ATTACHMENT_ID)
+                .name(ATTACHMENT_NAME)
+                .url(ATTACHMENT_URL)
+                .lesson(lesson())
+                .createdTime(TIME)
+                .build();
+    }
+
+    public static AttachmentDto attachmentDto() {
+        return AttachmentDto.builder()
+                .id(ATTACHMENT_ID)
+                .name(ATTACHMENT_NAME)
+                .url(ATTACHMENT_URL)
+                .lessonId(LESSON_ID)
+                .createdTime(TIME)
                 .build();
     }
 }

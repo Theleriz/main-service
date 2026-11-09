@@ -9,10 +9,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kz.bitlab.mainservice.dto.AttachmentDto;
 import kz.bitlab.mainservice.dto.LessonCreateRequest;
 import kz.bitlab.mainservice.dto.LessonDto;
 import kz.bitlab.mainservice.dto.LessonUpdateRequest;
 import kz.bitlab.mainservice.exception.ErrorResponse;
+import kz.bitlab.mainservice.service.AttachmentService;
 import kz.bitlab.mainservice.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,7 @@ import java.util.List;
 public class LessonController {
 
     private final LessonService lessonService;
+    private final AttachmentService attachmentService;
 
     @GetMapping
     @Operation(summary = "Get all lessons", description = "Returns lessons of all chapters sorted by ID")
@@ -62,6 +65,23 @@ public class LessonController {
     })
     public LessonDto getById(@Parameter(description = "Lesson ID", example = "1") @PathVariable Long id) {
         return lessonService.getById(id);
+    }
+
+    @GetMapping("/{id}/attachments")
+    @Operation(summary = "Get attachments of a lesson",
+            description = "Returns files attached to the lesson, download them with GET /attachment/download/{id}")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of attachments",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = AttachmentDto.class)))),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Lesson not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public List<AttachmentDto> getAttachments(@Parameter(description = "Lesson ID", example = "1") @PathVariable Long id) {
+        return attachmentService.getAllByLessonId(id);
     }
 
     @PostMapping
